@@ -698,7 +698,7 @@ class OsmApi:
     # Internal xml builder                                                #
     #######################################################################
 
-    def _XmlBuild(self, ElementType, ElementData, WithHeaders = True):
+    def _XmlBuild(self, ElementType, ElementData, WithHeaders = True, Action = None):
 
         xml  = u""
         if WithHeaders:
@@ -716,8 +716,10 @@ class OsmApi:
         if u"version" in ElementData:
             xml += u" version=\"" + str(ElementData[u"version"]) + u"\""
         xml += u" visible=\"" + str(ElementData.get(u"visible", True)).lower() + u"\""
-        if ElementType in [u"node", u"way", u"relation"]:
+        if ElementType in [u"node", u"way", u"relation"] and self._CurrentChangesetId != 0:
             xml += u" changeset=\"" + str(self._CurrentChangesetId) + u"\""
+        if Action != None:
+            xml += u" action=\"" + Action + "\""
         xml += u">\n"
 
         # <tag... />
