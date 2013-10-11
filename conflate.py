@@ -10,7 +10,7 @@ def notice(level, desc, feature=None, action=None):
   elif feature != None:
     feature['tag']['NOTICE'] = desc
     feature['tag']['NOTICE_LEVEL'] = level.upper()
-    feature['tag']['source'] = "http://www.unitar.org/unosat/node/44/1809"
+    #feature['tag']['source'] = "http://www.unitar.org/unosat/node/44/1809"
     print output_feature_as_osm_xml( feature, action )
 
 def load_import_features(shapePath, id_index):
@@ -50,27 +50,27 @@ def load_non_import_osm_features(osmPath, idtag):
   f.closed
   data = MyApi.ParseOsm(osmString)
   for index in xrange(len(data)):
-    if idtag not in data[index]['data']['tag'] and "building" in data[index]['data']['tag']:
-      osm_features[ data['id'] ] = data[index]['data']
+    if data[index]['type'] == 'node' and idtag not in data[index]['data']['tag'] and "building" in data[index]['data']['tag']:
+      osm_features[ data[index]['data']['id'] ] = data[index]['data']
   return osm_features
 
 def check_import_feature_status( feature ):
-  shelter_status = feature.GetFieldAsString(13)
-  sensor_date = feature.GetFieldAsString(3)
-  closed_date = feature.GetFieldAsString(14)
+  shelter_status = feature.GetFieldAsString(12)
+  sensor_date = feature.GetFieldAsString(2)
+  closed_date = feature.GetFieldAsString(13)
 
-  if shelter_status == '1' and sensor_date != import_date:  
+  if shelter_status == 'Open' and sensor_date != import_date:  
     return "EXISTING"
-  elif shelter_status == '1' and sensor_date == import_date:
+  elif shelter_status == 'Open' and sensor_date == import_date:
     return "ADDITION"
-  elif shelter_status == "2" and closed_date == import_date:
+  elif shelter_status == "Closed" and closed_date == import_date:
     return "DELETE"
   # What about testing for past deletes
 
-#"building" Structure_, 15 (1=shelther, 2=administrative)
+#"building" Structure_, 14 (1=shelther, 2=administrative)
 #"source"=http://www.unitar.org/unosat/node/44/1773
-#"unosat:acquisition_date" Sensor_Dat, 3
-#"unosat:event_code" EventCode, 10
+#"unosat:acquisition_date" Sensor_Dat, 2
+#"unosat:event_code" EventCode, 9
 #"unosat:objectid" OBJECTID, 0
 # Shelter_St, 13 (1=existing, 2=deleted)
 # ShelterClo, 14 (Date shelter closed)  
@@ -83,16 +83,16 @@ def transform_import_feature_to_osm( import_feature ):
 
   osm_feature['tag'] = {}
 
-  if import_feature.GetFieldAsString(15) == "1":
+  if import_feature.GetFieldAsString(14) == "Tent Shelter":
     osm_feature['tag']['building'] = 'shelter'
-  elif import_feature.GetFieldAsString(15) == "2":
+  elif import_feature.GetFieldAsString(14) == "Admin Building":
     osm_feature['tag']['building'] = 'administrative'
   else:
-    notice('warn','Unknown Structure_ value: ' + import_feature.GetFieldAsString(15))
+    notice('warn','Unknown Structure_ value: ' + import_feature.GetFieldAsString(14))
 
-  osm_feature['tag']['unosat:acquisition_date'] = import_feature.GetFieldAsString(3)
-  osm_feature['tag']['unosat:event_code'] = import_feature.GetFieldAsString(10)
-  osm_feature['tag']['unosat:objectid'] = import_feature.GetFieldAsString(0)
+  osm_feature['tag']['unosat:acquisition_date'] = import_feature.GetFieldAsString(2)
+  osm_feature['tag']['unosat:event_code'] = import_feature.GetFieldAsString(9)
+  osm_feature['tag']['unosat:objectid'] = import_feature.GetFieldAsString(15)
 
   return osm_feature
 
@@ -120,10 +120,10 @@ def output_feature_as_osm_xml( feature, action=None ):
 
 MyApi = OsmApi.OsmApi()
 create_id_index = -1
-import_date = '2013/08/25' #Import data created by UNOSAT
-last_import_date = '2013/08/31' #Prior import upload to OSM
-import_features = load_import_features('20130825-UNOSAT/Al_Zaatari_Shelters.shp', 0)
-osm_features = load_osm_features('zaatari.osm', 'unosat:objectid')
+import_date = '2013/09/30' #Import data created by UNOSAT
+last_import_date = '2013/09/02' #Prior import upload to OSM
+import_features = load_import_features('20131003/Al_Zaatari_20130930/Al_Zaatari_Shelters.shp', 15)
+osm_features = load_osm_features('20131003/zaatari.osm', 'unosat:objectid')
 
 print_osm_header()
 
@@ -154,8 +154,8 @@ for k in import_features.keys():
       notice("ERROR", "Deleted feature missing in past import: " + k) #
 
 # Check OSM features matching tags (building=*) that are not from UNOSAT import
-non_import_osm_features = load_non_import_osm_features('zaatari.osm', 'unosat:objectid')
+non_import_osm_features = load_non_import_osm_features('20131003/zaatari.osm', 'unosat:objectid')
 for k in non_import_osm_features.keys():
-  notice("ALERT", "OSM feature created :" + k, non_import_osm_features[ k ]) #Output OSM feature, with NOTICE tag
+  notice("ALERT", "OSM feature created :" + str(k), non_import_osm_features[ k ]) #Output OSM feature, with NOTICE tag
 
 print_osm_footer()
